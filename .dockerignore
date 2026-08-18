@@ -1,0 +1,15 @@
+# Nunca deixar credenciais ou dados coletados entrarem na imagem
+config/
+data/
+*.json
+!requirements.json
+.env
+.streamlit/secrets.toml
+
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.DS_Store
+.claude/

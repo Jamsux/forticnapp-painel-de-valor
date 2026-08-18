@@ -1,0 +1,16 @@
+services:
+  dashboard:
+    build: .
+    image: forticnapp-painel-de-valor:latest
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      # Opcional: se as três estiverem preenchidas, têm prioridade sobre a tela de
+      # Configuração do dashboard. Deixe em branco para cadastrar a chave pela interface.
+      - FORTICNAPP_KEY_ID=${FORTICNAPP_KEY_ID:-}
+      - FORTICNAPP_SECRET=${FORTICNAPP_SECRET:-}
+      - FORTICNAPP_ACCOUNT=${FORTICNAPP_ACCOUNT:-}
+    restart: unless-stopped

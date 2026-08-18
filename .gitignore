@@ -1,0 +1,15 @@
+# Credenciais e dados locais do cliente — nunca devem ir para o repositório
+config/
+data/
+*.json
+!requirements.json
+.streamlit/secrets.toml
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# SO
+.DS_Store

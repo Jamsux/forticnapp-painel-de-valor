@@ -1,28 +1,31 @@
-import streamlit as st
-from common import sidebar_refresh_control, has_data, has_credentials
+"""Ponto de entrada do painel.
 
-st.set_page_config(page_title="FortiCNAPP — Painel de Valor", page_icon="🛡️", layout="wide")
-
-sidebar_refresh_control()
-
-st.title("🛡️ FortiCNAPP — Painel de Valor")
-st.markdown(
-    """
-Este painel conecta diretamente à API do FortiCNAPP da sua conta e traduz os dados brutos
-em indicadores para dois públicos:
-
-- **Visão Gerencial** — indicadores para o decisor de segurança/tecnologia.
-- **Operações de Segurança** — indicadores acionáveis para o time técnico.
-
-Os dados ficam **armazenados localmente** (pasta `data/`) e só saem da sua máquina para consultar
-a própria API do FortiCNAPP.
+Usa st.navigation em vez da descoberta automática da pasta pages/: assim os nomes
+das páginas no menu também acompanham o idioma escolhido, o que a descoberta
+automática não permite (ela usa o nome do arquivo, que é fixo).
 """
-)
+import os
+import sys
 
-if not has_credentials():
-    st.warning("Antes de começar, cadastre sua API Key do FortiCNAPP.")
-    st.page_link("pages/0_⚙️_Configuração.py", label="Ir para Configuração", icon="⚙️")
-elif not has_data():
-    st.warning("Credenciais configuradas. Agora use **Atualizar dados** na barra lateral para a primeira coleta.")
-else:
-    st.info("Dados carregados. Use o menu à esquerda para navegar entre os dashboards.")
+import streamlit as st
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from common import apply_language, sidebar_language_selector  # noqa: E402
+from src.i18n import t  # noqa: E402
+
+st.set_page_config(page_title="FortiCNAPP — Value Dashboard", page_icon="🛡️", layout="wide")
+
+# o idioma precisa ser resolvido antes de qualquer texto — inclusive o menu
+apply_language()
+sidebar_language_selector()
+
+paginas = [
+    st.Page("views/home.py", title=t("page.home"), icon="🏠", default=True),
+    st.Page("views/settings.py", title=t("page.settings"), icon="⚙️"),
+    st.Page("views/executive.py", title=t("page.executive"), icon="📊"),
+    st.Page("views/operations.py", title=t("page.operations"), icon="🛠️"),
+    st.Page("views/report.py", title=t("page.report"), icon="🖨️"),
+]
+
+st.navigation(paginas).run()

@@ -134,14 +134,12 @@ def response_bias_note(period_days, sample_size, retention=RETENTION_DAYS):
     resolução. Sem este aviso, um recorte de 7 dias exibiria 'MTTR de 0 dias' e
     '100% em aberto' como se fossem boas/más notícias reais.
     """
+    from .i18n import t
+
     if sample_size == 0:
-        return ("Nenhum alerta criado neste período foi encerrado até agora, então não há tempo "
-                "de resolução a calcular. Escolha um período maior para avaliar a resposta.")
+        return t("bias.no_sample")
     if period_days < retention / 2:
-        return ("Períodos curtos distorcem os indicadores de resposta: alertas criados há poucos "
-                "dias ainda não tiveram tempo de ser tratados, o que infla o percentual em aberto "
-                "e reduz artificialmente o tempo de resolução. Para avaliar a capacidade de "
-                f"resposta, prefira o período de {retention} dias.")
+        return t("bias.short_period", days=retention)
     return None
 
 

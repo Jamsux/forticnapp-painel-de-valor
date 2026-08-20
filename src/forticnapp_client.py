@@ -4,6 +4,7 @@ import datetime as dt
 import requests
 
 from . import config_store
+from .i18n import t
 
 TOKEN_TTL_SECONDS = 3300  # a API expira em 3600s, renovamos um pouco antes
 
@@ -108,7 +109,7 @@ def test_connection(key_id, secret, account):
             timeout=15,
         )
     except requests.exceptions.RequestException as exc:
-        return False, f"Não foi possível conectar em https://{account}: {exc}"
+        return False, t("conn.unreachable", account=account, error=exc)
     if resp.status_code == 201:
-        return True, "Conexão autenticada com sucesso."
-    return False, f"Falha na autenticação (HTTP {resp.status_code}): {resp.text[:200]}"
+        return True, t("conn.ok")
+    return False, t("conn.auth_failed", status=resp.status_code, body=resp.text[:200])

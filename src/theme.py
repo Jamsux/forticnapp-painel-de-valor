@@ -15,14 +15,15 @@ PALETTE = {
 # A API classifica os alertas em Policy/Anomaly/Composite. Traduzido para termos
 # que dizem o que a categoria significa, já que o relatório vai para a diretoria.
 CATEGORY_LABELS = {
-    "Policy": "Configuração",
-    "Anomaly": "Comportamento",
-    "Composite": "Correlação",
+    "en": {"Policy": "Configuration", "Anomaly": "Behavior", "Composite": "Correlation"},
+    "pt": {"Policy": "Configuração", "Anomaly": "Comportamento", "Composite": "Correlação"},
 }
 
 
 def category_label(value):
-    return CATEGORY_LABELS.get(value, value or "—")
+    from .i18n import DEFAULT_LANG, get_language
+    mapa = CATEGORY_LABELS.get(get_language(), CATEGORY_LABELS[DEFAULT_LANG])
+    return mapa.get(value, value or "—")
 
 
 SEVERITY_COLOR_MAP = {

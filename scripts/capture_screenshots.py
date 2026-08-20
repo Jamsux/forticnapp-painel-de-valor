@@ -7,7 +7,7 @@ navegador é controlado pelo protocolo de depuração (CDP), que permite esperar
 página ficar pronta antes de capturar.
 
 Uso (com o app demo rodando em :8502):
-    FORTICNAPP_DEMO=1 .venv/bin/streamlit run dashboard/Home.py --server.port 8502
+    FORTICNAPP_DEMO=1 APP_LANG=en .venv/bin/streamlit run dashboard/Home.py --server.port 8502
     python3 scripts/capture_screenshots.py
 """
 import asyncio
@@ -30,10 +30,12 @@ OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "docs", "screenshots")
 DEBUG_PORT = 9333
 
 
+# URLs vêm do nome do arquivo em dashboard/views/, não do título traduzido —
+# então não mudam com o idioma.
 PAGES = [
-    ("visao-gerencial", "/Visão_Gerencial", 1440, 2400),
-    ("operacoes-seguranca", "/Operações_de_Segurança", 1440, 2600),
-    ("relatorio", "/Relatório", 1440, 2000),
+    ("executive-view", "/executive", 1440, 2400),
+    ("security-operations", "/operations", 1440, 2600),
+    ("report", "/report", 1440, 2000),
 ]
 
 

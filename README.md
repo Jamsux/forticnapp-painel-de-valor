@@ -1,59 +1,62 @@
-# FortiCNAPP — Painel de Valor
+# FortiCNAPP — Value Dashboard
 
-Conecta na API do FortiCNAPP (Lacework v2) da sua própria conta, cacheia os dados **localmente**
-(pasta `data/`, nunca sai da sua máquina) e monta dois dashboards Streamlit:
+*[Versão em português](README.pt-BR.md)*
 
-- **Visão Gerencial** — indicadores para quem decide: tendência de risco, tempo de resposta
-  (MTTR), utilização do produto.
-- **Operações de Segurança** — fila de trabalho para o time técnico: alertas em aberto,
-  vulnerabilidades com exploit conhecido, saúde das integrações.
-- **Relatório** — consolida os indicadores num layout profissional pronto para impressão ou para
-  salvar como PDF (impressão nativa do navegador), com nome do cliente personalizável.
+Connects to your own FortiCNAPP (Lacework v2) account API, caches the data **locally** (`data/`
+folder — it never leaves your machine) and turns it into indicators for two audiences:
 
-As credenciais da API também ficam só na sua máquina (pasta `config/`, nunca é commitada nem
-enviada a lugar nenhum além da própria API do FortiCNAPP).
+- **Executive View** — for whoever decides: risk trend, response time (MTTR), product utilization.
+- **Security Operations** — the technical team's work queue: open alerts, vulnerabilities with
+  known exploits, integration health.
+- **Report** — consolidates the indicators into a professional layout, ready to print or save as
+  PDF (native browser printing), with a customizable client name.
 
-## Exemplos
+Available in **English and Portuguese** — switch from the sidebar at any time.
 
-> As imagens abaixo foram geradas com o **modo demonstração** ligado: nomes de servidores,
-> usuários, domínio e integrações aparecem pseudonimizados. Os números, severidades e CVEs são
-> reais — o que se vê é exatamente o que o painel produz.
+API credentials also stay on your machine only (`config/` folder — never committed, never sent
+anywhere other than the FortiCNAPP API itself).
 
-### Visão Gerencial
+## Examples
 
-![Visão Gerencial](docs/screenshots/visao-gerencial.png)
+> The images below were generated with **demo mode** on: server, user, domain and integration
+> names are pseudonymized. The numbers, severities and CVEs are real — what you see is exactly
+> what the dashboard produces.
 
-### Operações de Segurança
+### Executive View
 
-![Operações de Segurança](docs/screenshots/operacoes-seguranca.png)
+![Executive View](docs/screenshots/executive-view.png)
 
-### Relatório para impressão
+### Security Operations
 
-![Relatório](docs/screenshots/relatorio.png)
+![Security Operations](docs/screenshots/security-operations.png)
 
-## Como rodar
+### Printable report
 
-Primeiro, clone o repositório:
+![Report](docs/screenshots/report.png)
+
+## Running it
+
+First, clone the repository:
 
 ```bash
 git clone https://github.com/Jamsux/forticnapp-painel-de-valor.git
 cd forticnapp-painel-de-valor
 ```
 
-### Opção 1 — Docker (recomendado, funciona igual em Windows, macOS e Linux)
+### Option 1 — Docker (recommended, identical on Windows, macOS and Linux)
 
 ```bash
 docker compose up --build
 ```
 
-Acesse [http://localhost:8501](http://localhost:8501), vá em **⚙️ Configuração** e cole sua API
-Key do FortiCNAPP. Pronto — os dados e a configuração ficam persistidos nas pastas `data/` e
-`config/` do host (montadas como volume), então sobrevivem a reinícios do container.
+Open [http://localhost:8501](http://localhost:8501), go to **⚙️ Settings** and paste your
+FortiCNAPP API Key. Data and configuration persist in the host's `data/` and `config/` folders
+(mounted as volumes), so they survive container restarts.
 
-No Windows, basta ter o [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-instalado e rodar o comando acima no PowerShell.
+On Windows, just install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and run
+the command above in PowerShell.
 
-### Opção 2 — Python local (macOS / Linux)
+### Option 2 — Local Python (macOS / Linux)
 
 ```bash
 python3 -m venv .venv
@@ -63,10 +66,10 @@ pip install -r requirements.txt
 streamlit run dashboard/Home.py
 ```
 
-### Opção 3 — Python local (Windows / PowerShell)
+### Option 3 — Local Python (Windows / PowerShell)
 
-Requer [Python 3.10+](https://www.python.org/downloads/) — na instalação, marque
-**"Add Python to PATH"**.
+Requires [Python 3.10+](https://www.python.org/downloads/) — tick **"Add Python to PATH"** during
+installation.
 
 ```powershell
 python -m venv .venv
@@ -76,163 +79,169 @@ pip install -r requirements.txt
 streamlit run dashboard/Home.py
 ```
 
-> Se o PowerShell bloquear a ativação do ambiente virtual, libere os scripts para o seu usuário:
+> If PowerShell blocks the virtual environment activation, allow scripts for your user:
 > `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
-No Windows, use `python` no lugar de `python3` nos demais comandos deste README
-(ex.: `python scripts\refresh_data.py`).
+On Windows, use `python` instead of `python3` in the other commands in this README
+(e.g. `python scripts\refresh_data.py`).
 
-Em qualquer uma das opções, acesse [http://localhost:8501](http://localhost:8501) e cadastre sua
-API Key em **⚙️ Configuração**.
+With any option, open [http://localhost:8501](http://localhost:8501) and register your API Key
+under **⚙️ Settings**.
 
-## Como obter a API Key do FortiCNAPP
+## Language
 
-1. No console do FortiCNAPP (`https://SUACONTA.lacework.net`), vá em **Settings → API Keys**.
-2. Crie uma chave com permissão de leitura.
-3. Baixe o `.json` gerado (contém `keyId`, `secret`, `account`) e cole na tela de Configuração
-   do dashboard — ou preencha os três campos manualmente.
+The sidebar has a language selector (**English / Português**) that applies to the whole
+application, including the printed report. English is the default.
 
-Alternativa para ambientes automatizados: defina as variáveis de ambiente
-`FORTICNAPP_KEY_ID`, `FORTICNAPP_SECRET`, `FORTICNAPP_ACCOUNT` (veja `.env.example`). Elas têm
-prioridade sobre o que for salvo pela tela de Configuração.
+To change the default, set the `APP_LANG` environment variable (`en` or `pt`), or pass `--lang`
+to the export script.
 
-## Período de análise
+## Getting the FortiCNAPP API Key
 
-A barra lateral tem um seletor de período: **7 / 30 / 90 dias** ou um **intervalo
-personalizado**. A escolha vale para todas as páginas e para o relatório impresso.
+1. In the FortiCNAPP console (`https://YOURACCOUNT.lacework.net`), go to **Settings → API Keys**.
+2. Create a key with read permission.
+3. Download the generated `.json` (it holds `keyId`, `secret`, `account`) and paste it into the
+   dashboard's Settings screen — or fill in the three fields manually.
 
-Duas coisas importantes:
+For automated environments, set the `FORTICNAPP_KEY_ID`, `FORTICNAPP_SECRET` and
+`FORTICNAPP_ACCOUNT` environment variables instead (see `.env.example`). They take precedence over
+anything saved through the Settings screen.
 
-- **O período recorta os indicadores de alertas** (volume, tendência, MTTR, tipos de alerta,
-  fila em aberto). **Vulnerabilidades e cobertura são a fotografia atual** do ambiente — o produto
-  não guarda "as vulnerabilidades de junho", guarda o estado de hoje. Isso fica sinalizado na tela
-  e no relatório.
-- **O limite é 90 dias**, imposto pela própria API (`startTime has to be within the past 90 Days`).
-  Como a coleta já traz a janela inteira, trocar de período é instantâneo — não refaz consultas.
+## Analysis period
 
-**Cuidado com períodos curtos:** o recorte é pela data de criação do alerta, então numa janela
-curta só entram como "resolvidos" os alertas que nasceram e foram fechados dentro dela. Isso infla
-o "% em aberto" e derruba artificialmente o tempo de resolução (nos últimos 7 dias desta conta há
-*zero* alertas fechados, e o MTTR apareceria como "0 dias"). O painel detecta esse caso, exibe "—"
-em vez de um número enganoso e mostra um aviso explicando. Para avaliar capacidade de resposta,
-use 90 dias.
+The sidebar has a period selector: **7 / 30 / 90 days** or a **custom range**. The choice applies
+to every page and to the printed report.
 
-Pela linha de comando:
+Two important notes:
 
-```bash
-python3 scripts/export_report.py --out relatorio.pdf --pdf --days 30
-python3 scripts/export_report.py --out relatorio.pdf --pdf --from 2026-06-01 --to 2026-06-30
-```
+- **The period slices the alert indicators** (volume, trend, MTTR, alert types, open queue).
+  **Vulnerabilities and coverage are the current snapshot** of the environment — the product does
+  not keep "June's vulnerabilities", it keeps today's state. This is flagged on screen and in the
+  report.
+- **The limit is 90 days**, imposed by the API itself (`startTime has to be within the past 90
+  Days`). Since the collection already fetches the whole window, switching periods is instant — no
+  new queries.
 
-## Atualizando os dados
+**Careful with short periods:** the slice is by alert creation date, so in a short window only the
+alerts that were both created and closed inside it count as "resolved". That inflates "% open" and
+artificially lowers resolution time (in the last 7 days of the sample account there are *zero*
+closed alerts, and MTTR would read "0 days"). The dashboard detects this case, shows "—" instead of
+a misleading number, and displays a warning. To assess response capability, use 90 days.
 
-- Pelo dashboard: botão **"🔄 Atualizar dados do FortiCNAPP"** na barra lateral.
-- Pelo terminal: `python3 scripts/refresh_data.py` (dentro do venv) — útil para agendar via cron.
-
-## Explicação dos indicadores
-
-Todo indicador exibido tem um tooltip (ícone **?**) explicando o que ele significa e como é
-calculado. As definições ficam centralizadas em [`src/glossary.py`](src/glossary.py) — fonte única
-de verdade compartilhada pelos dashboards e pelo relatório, para que o mesmo número nunca seja
-explicado de duas formas diferentes. Como tooltips não existem no papel, o relatório impresso
-inclui as mesmas definições numa seção **Glossário dos indicadores** ao final (pode ser desligada).
-
-## Relatório para impressão
-
-A página **🖨️ Relatório** monta um documento único (cabeçalho com nome do cliente, resumo
-executivo, tempo de resposta, vulnerabilidades, cobertura e um anexo operacional opcional) com um
-layout de relatório — não uma captura do dashboard. Clique em **"Imprimir / Salvar como PDF"** (ou
-use Ctrl+P / Cmd+P do navegador): a barra lateral e os controles da própria página somem
-automaticamente da versão impressa/PDF, sobrando só o relatório.
-
-O CSS de impressão cuida da paginação: quebras só entre blocos (nunca no meio de um card, linha de
-tabela ou definição), cabeçalho de tabela repetido a cada página, cores preservadas no papel, e os
-contêineres de rolagem do Streamlit convertidos em fluxo normal — sem isso o navegador recorta tudo
-que passa da primeira página.
-
-### Gerar o relatório sem abrir o dashboard
+From the command line:
 
 ```bash
-python3 scripts/export_report.py --out relatorio.pdf --pdf --client-name "Nome do Cliente"
+python3 scripts/export_report.py --out report.pdf --pdf --days 30
+python3 scripts/export_report.py --out report.pdf --pdf --from 2026-06-01 --to 2026-06-30
 ```
 
-Gera HTML autocontido (padrão) ou PDF (`--pdf`, via Chrome/Chromium headless). Usa exatamente a
-mesma função de montagem da página do dashboard (`src/report.build_report_html`), então o resultado
-é idêntico — útil para agendar o envio periódico de um PDF.
+## Refreshing the data
 
-## O que é coletado
+- From the dashboard: the **"🔄 Refresh FortiCNAPP data"** button in the sidebar.
+- From the terminal: `python3 scripts/refresh_data.py` (inside the venv) — handy for scheduling
+  with cron.
 
-- **Alertas** (últimos 90 dias, todas as páginas) — cobre CSPM (categoria `Policy`), comportamento
-  anômalo (`Anomaly`) e detecções compostas (`Composite`).
-- **Vulnerabilidades ativas em hosts** — contagem por severidade + detalhe de Critical/High
-  (deduplicado por host+CVE), incluindo flags de exploit público/conhecido.
-- **Inventário** — hosts monitorados, contas cloud conectadas e sua saúde, contagens de
-  visibilidade (usuários, aplicações, pacotes, interfaces de rede).
-- **Regras/contrato** — `AlertRules`, `ReportRules`, `ResourceGroups`.
+## Indicator explanations
 
-## Indicadores de tempo de resposta (MTTR / MTTA / MTTD)
+Every indicator has a tooltip (the **?** icon) explaining what it means and how it is calculated.
+The definitions live in [`src/glossary.py`](src/glossary.py) — a single source of truth shared by
+the dashboards and the report, so the same number is never explained two different ways. Since
+tooltips do not exist on paper, the printed report includes the same definitions in a **Indicator
+glossary** section at the end (which can be turned off).
 
-A Visão Gerencial traz **MTTR** (Mean Time to Resolve) real, calculado a partir de
-`lastUserUpdatedTime − startTime` dos alertas com `status = Closed` — mediana e p90, geral e por
-severidade, com a fórmula explicada num expander na própria página.
+## Printable report
 
-**MTTA e MTTD não são reportados** porque a API não sustenta esse cálculo: não existe um evento de
-"reconhecido" distinto de "fechado" nos dados de `Alerts/search`, e os endpoints de
-detalhe/histórico por alerta (`/Alerts/{id}`, `/Alerts/{id}/Timeline`) retornaram erro 400/500 nos
-testes feitos. Em vez de estimar esses números, o dashboard mostra um dado real equivalente: a
-fração de alertas hoje em aberto sem nenhuma interação registrada desde a criação — um sinal mais
-honesto de gap de resposta do que um MTTA aproximado.
+The **🖨️ Report** page builds a single document (header with client name, executive summary,
+response time, vulnerabilities, coverage and an optional operational annex) with a report layout —
+not a screenshot of the dashboard. Click **"Print / Save as PDF"** (or use Ctrl+P / Cmd+P): the
+sidebar and the page's own controls disappear from the printed/PDF version, leaving only the
+report.
 
-## Limitações conhecidas da API
+The print CSS handles pagination: breaks only between blocks (never inside a card, table row or
+definition), table headers repeated on each page, colors preserved on paper, and Streamlit's
+scrolling containers converted to normal flow — without that, the browser clips everything past
+the first page.
 
-- O endpoint `Configs/ComplianceEvaluations/search` não respondeu com nenhum corpo de requisição
-  testado (erro genérico "Invalid request", mesmo com `timeFilter`/`filters` válidos) — a
-  documentação completa está atrás de login em fndn.fortinet.net. Como contorno, o indicador de
-  CSPM/compliance vem da categoria `Policy` dentro de `Alerts`, que já reflete achados reais de
-  configuração incorreta.
-- Não foi encontrado endpoint v2 dedicado a **CIEM** (entitlements de identidade) — pode ser que o
-  módulo não esteja habilitado na conta testada, ou que use outro caminho de API.
-- `GET /api/v2/ContractInfo` apresentou instabilidade (erro 500 intermitente) durante os testes —
-  o script de coleta não trava nesse caso, apenas pula esse dado quando falha.
+### Generating the report without opening the dashboard
 
-## Estrutura do projeto
-
-```
-dashboard/          # app Streamlit (Home + páginas)
-src/                # cliente de API, coletores, agregação de indicadores
-scripts/refresh_data.py   # coleta via CLI
-config/              # credenciais (gitignored, criado em runtime)
-data/                # cache local dos dados coletados (gitignored, criado em runtime)
+```bash
+python3 scripts/export_report.py --out report.pdf --pdf --client-name "Client Name" --lang en
 ```
 
-## Modo demonstração (para prints e apresentações)
+Produces self-contained HTML (default) or PDF (`--pdf`, via headless Chrome/Chromium). It uses
+exactly the same assembly function as the dashboard page
+(`src/report.build_report_html`), so the result is identical — useful for scheduling a periodic PDF.
 
-Para mostrar o painel sem expor identificadores do ambiente, rode com a variável
-`FORTICNAPP_DEMO=1`:
+## What is collected
+
+- **Alerts** (last 90 days, all pages) — covers CSPM (`Policy` category), anomalous behavior
+  (`Anomaly`) and composite detections (`Composite`).
+- **Active host vulnerabilities** — counts by severity plus Critical/High detail (deduplicated by
+  host+CVE), including public exploit / known malware flags.
+- **Inventory** — monitored servers, connected cloud accounts and their health, visibility counts
+  (users, applications, packages, network interfaces).
+- **Rules/contract** — `AlertRules`, `ReportRules`, `ResourceGroups`.
+
+## Response time indicators (MTTR / MTTA / MTTD)
+
+The Executive View shows a real **MTTR** (Mean Time to Resolve), computed from
+`lastUserUpdatedTime − startTime` for alerts with `status = Closed` — median and p90, overall and
+by severity, with the formula explained in an expander on the page itself.
+
+**MTTA and MTTD are not reported** because the API does not support that calculation: there is no
+"acknowledged" event distinct from "closed" in the `Alerts/search` data, and the per-alert
+detail/history endpoints (`/Alerts/{id}`, `/Alerts/{id}/Timeline`) returned 400/500 errors in
+testing. Rather than estimating those numbers, the dashboard shows an equivalent real figure: the
+share of currently open alerts with no recorded interaction since creation — a more honest signal
+of the response gap than an approximate MTTA.
+
+## Known API limitations
+
+- The `Configs/ComplianceEvaluations/search` endpoint did not respond to any request body tested
+  (generic "Invalid request", even with valid `timeFilter`/`filters`) — the full documentation sits
+  behind a login at fndn.fortinet.net. As a workaround, the CSPM/compliance indicator comes from
+  the `Policy` category inside `Alerts`, which already reflects real misconfiguration findings.
+- No dedicated v2 endpoint for **CIEM** (identity entitlements) was found — the module may not be
+  enabled on the tested account, or it may use a different API path.
+- `GET /api/v2/ContractInfo` was unstable (intermittent 500) during testing — the collection script
+  does not fail in that case, it simply skips that data.
+
+## Demo mode (for screenshots and presentations)
+
+To show the dashboard without exposing environment identifiers, run it with `FORTICNAPP_DEMO=1`:
 
 ```bash
 FORTICNAPP_DEMO=1 streamlit run dashboard/Home.py
 ```
 
-Nesse modo, ao carregar os dados são pseudonimizados: nomes de servidores (inclusive quando
-citados dentro das descrições dos alertas), contas de usuário e domínio, nomes das integrações
-cloud e e-mails. **Contagens, severidades, CVEs e datas permanecem intactos** — e os
-identificadores de conta cloud recebem pseudônimos estáveis, para que "uma conta com duas
-integrações" continue sendo contada como uma conta.
+In this mode the data is pseudonymized as it loads: server names (including where they are quoted
+inside alert descriptions), user accounts and domain, cloud integration names and e-mails.
+**Counts, severities, CVEs and dates stay intact** — and cloud account identifiers get stable
+pseudonyms, so "one account with two integrations" is still counted as one account.
 
-As imagens deste README foram geradas assim:
+The images in this README were generated with:
 
 ```bash
 python3 scripts/capture_screenshots.py
 ```
 
-## Segurança
+## Project structure
 
-- Nenhuma credencial é commitada: `config/` e qualquer `*.json` estão no `.gitignore` e no
+```
+dashboard/           # Streamlit app (entry point + views)
+src/                 # API client, collectors, aggregation, i18n, report
+scripts/             # data refresh, report export, screenshot capture
+config/              # credentials (gitignored, created at runtime)
+data/                # local cache of collected data (gitignored, created at runtime)
+```
+
+## Security
+
+- No credentials are ever committed: `config/` and any `*.json` are in `.gitignore` and
   `.dockerignore`.
-- Os dados coletados (`data/`) também não saem da máquina onde o dashboard roda.
-- A API Key só precisa de permissão de **leitura**.
+- Collected data (`data/`) also never leaves the machine where the dashboard runs.
+- The API Key only needs **read** permission.
 
-## Licença
+## License
 
-Distribuído sob a [Apache License 2.0](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).

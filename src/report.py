@@ -4,7 +4,9 @@ import html as _html
 
 from . import aggregate
 from .aggregate import RETENTION_DAYS
-from .glossary import GLOSSARY, alert_type_label, help_text
+from .glossary import (alert_type_label, entries as glossary_entries, help_text,
+                       label as glossary_label)
+from .i18n import get_language, t
 from .theme import PALETTE, SEVERITY_COLOR_MAP, category_label
 
 REPORT_CSS = f"""
@@ -222,7 +224,7 @@ def bar_list(rows, max_value=None, colors=None):
     Quando há cor para o rótulo, o texto também recebe essa cor — na impressão a
     gravidade precisa ser legível sem depender só do comprimento da barra."""
     if not rows:
-        return '<p style="color:#94A3B8;font-size:12.5px;">Sem dados.</p>'
+        return f'<p style="color:#94A3B8;font-size:12.5px;">{esc(t("doc.no_data"))}</p>'
     max_value = max_value or max((v for _, v in rows), default=1) or 1
     out = []
     for label, value in rows:
@@ -247,7 +249,7 @@ def table(headers, rows, html_cols=(), align_right=()):
     html_cols: índices de colunas cujo conteúdo já é HTML (não deve ser escapado).
     align_right: índices de colunas numéricas, alinhadas à direita."""
     if not rows:
-        return '<p style="color:#94A3B8;font-size:12.5px;">Sem dados.</p>'
+        return f'<p style="color:#94A3B8;font-size:12.5px;">{esc(t("doc.no_data"))}</p>'
     thead = "".join(
         f'<th{" style=\"text-align:right;\"" if i in align_right else ""}>{esc(h)}</th>'
         for i, h in enumerate(headers)
@@ -289,35 +291,39 @@ def section(title, body_html):
 
 
 def header(client_name, generated_at_str, period_label):
-    subtitle = esc(client_name) if client_name else "Relatório de postura de segurança"
+    subtitle = esc(client_name) if client_name else t("doc.default_title")
     return (
         '<div class="rp-header"><div>'
-        '<div class="rp-brand">🛡️ FortiCNAPP — Painel de Valor</div>'
+        f'<div class="rp-brand">{esc(t("doc.brand"))}</div>'
         f"<h1>{subtitle}</h1></div>"
-        f'<div class="rp-meta">Gerado em {esc(generated_at_str)}<br/>'
-        f"Período analisado: {esc(period_label)}</div></div>"
+        f'<div class="rp-meta">{esc(t("doc.generated_at", when=generated_at_str))}<br/>'
+        f'{esc(t("doc.period", period=period_label))}</div></div>'
     )
 
 
 def footer(generated_at_str):
     return (
         '<div class="rp-footer">'
-        f"Gerado automaticamente pelo FortiCNAPP Painel de Valor em {esc(generated_at_str)}. "
-        "Dados coletados diretamente da API do FortiCNAPP da própria conta."
+        f'{esc(t("doc.footer", when=generated_at_str))}'
         "</div>"
     )
 
 
-VC_LABELS = {
-    "hosts": "Servidores", "containers": "Containers", "users_os": "Contas de usuário",
-    "applications": "Aplicações", "network_interfaces": "Interfaces de rede",
-    "packages": "Pacotes de software",
-}
 VC_HELP_KEYS = {
     "hosts": "coverage_hosts", "containers": "coverage_containers", "users_os": "coverage_users",
     "applications": "coverage_applications", "network_interfaces": "coverage_network_interfaces",
     "packages": "coverage_packages",
 }
+
+
+def num(valor):
+    """Separador de milhar conforme o idioma: 1,234 em inglês, 1.234 em português."""
+    formatado = f"{valor:,}"
+    return formatado if get_language() == "en" else formatado.replace(",", ".")
+
+
+def _fmt_date(momento):
+    return momento.strftime("%b %d, %Y" if get_language() == "en" else "%d/%m/%Y")
 
 
 def build_report_html(data, client_name="", include_ops=True, include_glossary=True, now=None,
@@ -346,107 +352,95 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
     ini = period_start if period_start is not None else (
         alerts_df["startTime"].min() if alerts_df is not None and not alerts_df.empty else None)
     fim = period_end if period_end is not None else now
-    period_label = (
-        f"{ini.strftime('%d/%m/%Y')} – {fim.strftime('%d/%m/%Y')}" if ini is not None else "—"
-    )
+    period_label = f"{_fmt_date(ini)} – {_fmt_date(fim)}" if ini is not None else "—"
 
     parts = [header(client_name, generated_at_str, period_label)]
 
     # --- Resumo executivo
     headline = ""
     if akpi["total"]:
-        headline = (
-            f"No período analisado, o FortiCNAPP gerou <b>{akpi['total']:,}</b> alertas para esta conta — "
-            f"<b>{akpi['open_pct']}%</b> ({akpi['open']:,}) ainda estão <b>em aberto</b>, com idade média de "
-            f"<b>{akpi['avg_open_age_days']} dias</b>. O produto está detectando; o gargalo está na resposta."
-        ).replace(",", ".")
+        headline = t("doc.headline", total=num(akpi["total"]), open_pct=akpi["open_pct"],
+                     open=num(akpi["open"]), age=akpi["avg_open_age_days"])
     cards = [
-        kpi_card("Alertas (período)", f"{akpi['total']:,}".replace(",", "."), tooltip=help_text("alerts_total")),
-        kpi_card("% em aberto", f"{akpi['open_pct']}%", tooltip=help_text("alerts_open_pct")),
-        kpi_card("Críticos/Altos em aberto", akpi["critical_high_open"],
+        kpi_card(t("doc.kpi.alerts_period"), num(akpi["total"]), tooltip=help_text("alerts_total")),
+        kpi_card(glossary_label("alerts_open_pct"), f"{akpi['open_pct']}%",
+                 tooltip=help_text("alerts_open_pct")),
+        kpi_card(glossary_label("alerts_critical_high_open"), akpi["critical_high_open"],
                  tooltip=help_text("alerts_critical_high_open")),
-        kpi_card("Idade média (aberto)", f"{akpi['avg_open_age_days']} dias", tooltip=help_text("alerts_avg_age")),
-        kpi_card("Vulnerabilidades críticas e altas", f"{vkpi['critical_high_active']:,}".replace(",", "."),
+        kpi_card(glossary_label("alerts_avg_age"),
+                 f"{akpi['avg_open_age_days']} {t('unit.days')}",
+                 tooltip=help_text("alerts_avg_age")),
+        kpi_card(glossary_label("vulns_critical_high"), num(vkpi["critical_high_active"]),
                  tooltip=help_text("vulns_critical_high")),
-        kpi_card("Servidores monitorados", cov["hosts_total"], tooltip=help_text("coverage_hosts")),
+        kpi_card(glossary_label("coverage_hosts"), cov["hosts_total"],
+                 tooltip=help_text("coverage_hosts")),
     ]
     body = (f'<div class="rp-callout">{headline}</div>' if headline else "") + kpi_grid(cards)
-    parts.append(section("Resumo executivo", body))
+    parts.append(section(t("doc.section.executive"), body))
 
     # --- Tempo de resposta
     sem_amostra = rkpi["sample_size"] == 0
     r_cards = [
-        kpi_card("MTTR (mediana)", "—" if sem_amostra else f"{rkpi['mttr_days_median']} dias",
-                 f"amostra de {rkpi['sample_size']:,}".replace(",", "."), tooltip=help_text("mttr_median")),
-        kpi_card("MTTR (p90)", "—" if sem_amostra else f"{rkpi['mttr_days_p90']} dias",
+        kpi_card(glossary_label("mttr_median"),
+                 "—" if sem_amostra else f"{rkpi['mttr_days_median']} {t('unit.days')}",
+                 t("doc.kpi.sample_of", n=num(rkpi["sample_size"])), tooltip=help_text("mttr_median")),
+        kpi_card(glossary_label("mttr_p90"),
+                 "—" if sem_amostra else f"{rkpi['mttr_days_p90']} {t('unit.days')}",
                  tooltip=help_text("mttr_p90")),
-        kpi_card("Abertos sem interação", f"{rkpi['open_never_touched_pct']}%",
-                 f"{rkpi['open_never_touched']:,} de {rkpi['open_total']:,}".replace(",", "."),
+        kpi_card(t("doc.kpi.open_no_touch"), f"{rkpi['open_never_touched_pct']}%",
+                 t("doc.kpi.of_total", part=num(rkpi["open_never_touched"]),
+                   total=num(rkpi["open_total"])),
                  tooltip=help_text("open_never_touched")),
     ]
     mttr_sev = aggregate.mttr_by_severity(alerts_df)
     mttr_table = table(
-        ["Gravidade", "Tempo mediano de resolução (dias)"],
+        [t("doc.col.severity"), t("doc.col.mttr_days")],
         [[severity_text(row.severity), row.mttr_days] for row in mttr_sev.itertuples()],
         html_cols={0}, align_right={1},
     )
-    note = (
-        '<p class="rp-note">'
-        "<b>Como ler:</b> o tempo de resolução considera o intervalo entre a abertura e o "
-        "encerramento de cada alerta já tratado. O tempo até o primeiro atendimento não é "
-        "apresentado porque a ferramenta registra apenas quando o alerta nasce e quando é "
-        "encerrado, sem marcar o momento em que alguém o assumiu. Em vez de estimar esse valor, "
-        "apresentamos acima um dado verificável: quantos alertas seguem sem qualquer atendimento."
-        "</p>"
-    )
+    note = f'<p class="rp-note">{t("doc.note.how_to_read")}</p>'
     period_days = (fim - ini).days if ini is not None and fim is not None else RETENTION_DAYS
     bias = aggregate.response_bias_note(period_days, rkpi["sample_size"])
     if bias:
         note += (f'<p class="rp-note" style="border-left:3px solid {PALETTE["medium"]};'
-                 f'padding-left:9px;"><b>Atenção ao período:</b> {esc(bias)}</p>')
+                 f'padding-left:9px;">{t("doc.note.period_warning")}{esc(bias)}</p>')
     parts.append(section(
-        "Tempo de resposta",
-        block("", kpi_grid(r_cards))
-        + block("Tempo de resolução por gravidade", mttr_table + note),
+        t("doc.section.response"),
+        block("", kpi_grid(r_cards)) + block(t("doc.block.mttr_by_sev"), mttr_table + note),
     ))
 
     # --- Vulnerabilidades
     sev_rows = [(s, vkpi["counts"].get(s, 0)) for s in aggregate.SEVERITY_ORDER if vkpi["counts"].get(s, 0)]
     v_cards = [
-        kpi_card("Com exploit conhecido", f"{vkpi['known_exploited']:,}".replace(",", "."),
-                 "ferramenta de ataque já disponível", tooltip=help_text("vulns_known_exploited")),
-        kpi_card("Associadas a malware/ransomware", f"{vkpi['malware_associated']:,}".replace(",", "."),
+        kpi_card(glossary_label("vulns_known_exploited"), num(vkpi["known_exploited"]),
+                 t("doc.kpi.attack_tool"), tooltip=help_text("vulns_known_exploited")),
+        kpi_card(glossary_label("vulns_malware"), num(vkpi["malware_associated"]),
                  tooltip=help_text("vulns_malware")),
-        kpi_card("Com correção disponível", f"{vkpi['fixable_now']:,}".replace(",", "."),
+        kpi_card(glossary_label("vulns_fixable"), num(vkpi["fixable_now"]),
                  tooltip=help_text("vulns_fixable")),
-        kpi_card("Servidores afetados", f"{vkpi['hosts_affected']:,}".replace(",", "."),
+        kpi_card(glossary_label("vulns_hosts_affected"), num(vkpi["hosts_affected"]),
                  tooltip=help_text("vulns_hosts_affected")),
-        kpi_card("Capazes de se espalhar sozinhas", f"{vkpi['wormable']:,}".replace(",", "."),
+        kpi_card(glossary_label("vulns_wormable"), num(vkpi["wormable"]),
                  tooltip=help_text("vulns_wormable")),
-        kpi_card("Total de falhas ativas", f"{vkpi['total_active']:,}".replace(",", "."),
-                 "todas as gravidades"),
+        kpi_card(t("doc.kpi.total_active"), num(vkpi["total_active"]), t("doc.kpi.all_severities")),
     ]
     known = aggregate.known_exploited_table(vuln_df, n=10)
     known_rows = [
         [r.hostname, r.vulnId, severity_text(r.severity), r.cveRiskScore,
-         "Sim" if r.fixAvailable else "Não"]
+         t("doc.yes") if r.fixAvailable else t("doc.no")]
         for r in known.itertuples()
     ] if not known.empty else []
     known_block = block(
-        "Prioridade máxima — falhas com ferramenta de ataque disponível (top 10)",
-        table(["Servidor", "CVE", "Gravidade", "CVSS", "Correção disponível"], known_rows,
-              html_cols={2}, align_right={3})
-        + '<p class="rp-note">CVSS é a nota de gravidade da falha, de 0 a 10, definida pelo '
-          'padrão internacional. Notas a partir de 9,0 são consideradas críticas.</p>',
+        t("doc.block.top_exploited"),
+        table([t("doc.col.server"), t("doc.col.cve"), t("doc.col.severity"), t("doc.col.cvss"),
+               t("doc.col.fix_available")],
+              known_rows, html_cols={2}, align_right={3})
+        + f'<p class="rp-note">{t("doc.note.cvss")}</p>',
     ) if known_rows else ""
-    snapshot_note = (
-        '<p class="rp-note"><b>Posição atual:</b> diferentemente dos alertas, esta seção não se '
-        "refere ao período analisado — mostra as falhas que existem hoje no ambiente, conforme a "
-        f"coleta de {generated_at_str}.</p>"
-    )
+    snapshot_note = f'<p class="rp-note">{t("doc.note.snapshot_vulns", when=generated_at_str)}</p>'
     parts.append(section(
-        "Vulnerabilidades ativas",
-        block("Distribuição por gravidade",
+        t("doc.section.vulns"),
+        block(t("doc.block.severity_dist"),
               bar_list(sev_rows, colors=SEVERITY_COLOR_MAP) + snapshot_note)
         + block("", kpi_grid(v_cards))
         + known_block,
@@ -457,77 +451,73 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
     if not top_types.empty:
         total_alerts = akpi["total"] or 1
         type_rows = [
-            [alert_type_label(r.alertType),
-             f"{r.count:,}".replace(",", "."),
+            [alert_type_label(r.alertType), num(r.count),
              f"{round(100 * r.count / total_alerts, 1)}%"]
             for r in top_types.itertuples()
         ]
         concentracao = round(100 * top_types["count"].head(3).sum() / total_alerts, 1)
         parts.append(section(
-            "O que o produto vem detectando",
+            t("doc.section.detecting"),
             block(
-                "Tipos de alerta mais frequentes no período",
-                table(["O que foi detectado", "Ocorrências", "% do total"], type_rows,
-                      align_right={1, 2})
-                + '<p class="rp-note"><b>Como ler:</b> esta é a tradução, em linguagem comum, '
-                  "dos tipos de alerta que mais se repetiram. Concentração alta em poucos tipos "
-                  "normalmente indica regra que precisa de ajuste — e não aumento real de risco. "
-                  f"Aqui, os três tipos mais frequentes respondem por <b>{concentracao}%</b> de "
-                  "todos os alertas do período: reduzir esse ruído libera a equipe para tratar o "
-                  "que de fato importa.</p>",
+                t("doc.block.alert_types"),
+                table([t("doc.col.detected"), t("doc.col.occurrences"), t("doc.col.pct_total")],
+                      type_rows, align_right={1, 2})
+                + f'<p class="rp-note">{t("doc.note.alert_types", pct=concentracao)}</p>',
             ),
         ))
 
     # --- Cobertura
     vc = cov["visibility_counts"] or {}
     cov_cards = [
-        kpi_card(VC_LABELS.get(k, k), f"{v:,}".replace(",", "."),
+        kpi_card(glossary_label(VC_HELP_KEYS[k]) if k in VC_HELP_KEYS else k, num(v),
                  tooltip=help_text(VC_HELP_KEYS[k]) if k in VC_HELP_KEYS else "")
         for k, v in vc.items()
     ]
     cov_cards.append(kpi_card(
-        "Contas cloud monitoradas", cov["cloud_accounts_total"],
-        f"{cov['cloud_integrations_total']} integrações configuradas",
+        glossary_label("coverage_cloud_accounts"), cov["cloud_accounts_total"],
+        t("doc.kpi.integrations", n=cov["cloud_integrations_total"]),
         tooltip=help_text("coverage_cloud_accounts"),
     ))
     parts.append(section(
-        "Cobertura e visibilidade",
+        t("doc.section.coverage"),
         block("", kpi_grid(cov_cards)
-              + '<p class="rp-note">Também é a posição atual do ambiente, não do período '
-                "analisado.</p>"),
+              + f'<p class="rp-note">{t("doc.note.snapshot_coverage")}</p>'),
     ))
 
     # --- Anexo operacional
     if include_ops:
         LIMITE_ALERTAS = 20
         open_df = aggregate.open_alerts_table(alerts_df)
-        alerts_title = "Alertas de maior gravidade ainda em aberto"
+        alerts_title = t("doc.block.open_alerts")
         if not open_df.empty:
             crit_high_all = open_df[open_df["severity"].isin(["Critical", "High"])]
             crit_high = crit_high_all.head(LIMITE_ALERTAS)
             # o título só promete "top N" quando de fato houve corte
             if len(crit_high_all) > LIMITE_ALERTAS:
-                alerts_title += f" (os {LIMITE_ALERTAS} mais antigos, de {len(crit_high_all)})"
+                alerts_title += t("doc.block.open_alerts_capped", n=LIMITE_ALERTAS,
+                                  total=len(crit_high_all))
             else:
-                alerts_title += f" ({len(crit_high_all)} no total, do mais antigo ao mais recente)"
+                alerts_title += t("doc.block.open_alerts_all", n=len(crit_high_all))
             rows = [[r.alertName, severity_text(r.severity), category_label(r.category),
                      round(r.age_days, 1)]
                     for r in crit_high.itertuples()]
-            alerts_table_html = table(["Alerta", "Gravidade", "Origem", "Parado há (dias)"], rows,
-                                       html_cols={1}, align_right={3})
+            alerts_table_html = table(
+                [t("doc.col.alert"), t("doc.col.severity"), t("doc.col.source"),
+                 t("doc.col.idle_days")],
+                rows, html_cols={1}, align_right={3})
         else:
-            alerts_table_html = "<p>Nenhum alerta em aberto.</p>"
+            alerts_table_html = f"<p>{esc(t('ops.open_alerts_empty'))}</p>"
 
         top_hosts = aggregate.top_vulnerable_hosts(vuln_df, n=10)
         hosts_rows = ([[r.hostname, r.critical, r.high, r.total] for r in top_hosts.itertuples()]
                       if not top_hosts.empty else [])
         ops_html = (
             block(alerts_title, alerts_table_html)
-            + block("Servidores com mais vulnerabilidades (10 primeiros)",
-                    table(["Servidor", "Críticas", "Altas", "Total"], hosts_rows,
-                          align_right={1, 2, 3}))
+            + block(t("doc.block.top_hosts"),
+                    table([t("doc.col.server"), t("doc.col.critical"), t("doc.col.high"),
+                           t("doc.col.total")], hosts_rows, align_right={1, 2, 3}))
         )
-        parts.append(section("Anexo operacional", ops_html))
+        parts.append(section(t("doc.section.annex"), ops_html))
 
     # --- Glossário (tooltips não existem no papel)
     if include_glossary:
@@ -542,13 +532,8 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
         glossary_keys.append("coverage_cloud_accounts")
         if include_ops:
             glossary_keys += ["open_alerts_table", "top_vulnerable_hosts"]
-        seen, entries = set(), []
-        for key in glossary_keys:
-            if key in seen or key not in GLOSSARY:
-                continue
-            seen.add(key)
-            entries.append(GLOSSARY[key])
-        parts.append(section("Glossário dos indicadores", glossary_section(entries)))
+        parts.append(section(t("doc.section.glossary"),
+                             glossary_section(glossary_entries(glossary_keys))))
 
     parts.append(footer(generated_at_str))
     return f'<div class="print-report">{"".join(parts)}</div>'
@@ -556,8 +541,9 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
 
 def standalone_html(report_html):
     """Documento HTML completo e autocontido — usado para gerar/validar o PDF fora do Streamlit."""
+    lang = get_language()
     return (
-        '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
-        "<title>Relatório FortiCNAPP</title>"
+        f'<!doctype html><html lang="{"en" if lang == "en" else "pt-BR"}"><head><meta charset="utf-8">'
+        f"<title>{esc(t('doc.default_title'))}</title>"
         f"{REPORT_CSS}</head><body>{report_html}</body></html>"
     )

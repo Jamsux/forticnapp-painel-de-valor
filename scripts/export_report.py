@@ -16,7 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src import anonymize, browser, cache, report  # noqa: E402
+from src import anonymize, browser, cache, i18n, report  # noqa: E402
 from src.aggregate import RETENTION_DAYS  # noqa: E402
 
 
@@ -63,7 +63,11 @@ def main():
                         help="data inicial no formato AAAA-MM-DD (alternativa a --days)")
     parser.add_argument("--to", dest="date_to", default=None,
                         help="data final no formato AAAA-MM-DD (padrão: hoje)")
+    parser.add_argument("--lang", choices=i18n.SUPPORTED, default=None,
+                        help="idioma do relatório (padrão: inglês, ou APP_LANG)")
     args = parser.parse_args()
+    if args.lang:
+        i18n.set_language(args.lang)
 
     if cache.load_json("_refresh_meta") is None:
         print("[erro] Nenhum dado coletado ainda. Rode antes: python3 scripts/refresh_data.py")

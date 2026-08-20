@@ -26,6 +26,23 @@ def category_label(value):
     return mapa.get(value, value or "—")
 
 
+# A API devolve as severidades em inglês (Critical/High/...). Os VALORES seguem
+# em inglês em filtros e comparações — o que muda é só a exibição, para o
+# analista continuar cruzando com o console do FortiCNAPP sem descompasso.
+SEVERITY_LABELS = {
+    "en": {"Critical": "Critical", "High": "High", "Medium": "Medium",
+           "Low": "Low", "Info": "Info"},
+    "pt": {"Critical": "Crítica", "High": "Alta", "Medium": "Média",
+           "Low": "Baixa", "Info": "Informativa"},
+}
+
+
+def severity_label(value):
+    from .i18n import DEFAULT_LANG, get_language
+    mapa = SEVERITY_LABELS.get(get_language(), SEVERITY_LABELS[DEFAULT_LANG])
+    return mapa.get(value, value or "—")
+
+
 SEVERITY_COLOR_MAP = {
     "Critical": PALETTE["critical"],
     "High": PALETTE["high"],

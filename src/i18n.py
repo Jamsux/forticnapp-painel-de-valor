@@ -28,10 +28,15 @@ def get_language():
     return getattr(_state, "lang", padrao)
 
 
-def t(key, **kwargs):
+def t(key, /, **kwargs):
     """Texto traduzido. Cai para o inglês se faltar tradução, e devolve a própria
     chave se ela não existir — assim um texto esquecido aparece na tela em vez de
-    quebrar a aplicação."""
+    quebrar a aplicação.
+
+    A barra torna `key` posicional-only: sem isso, um texto com placeholder
+    chamado {key} (como o Key ID na tela de configuração) colidiria com o
+    parâmetro da própria função.
+    """
     lang = get_language()
     texto = STRINGS.get(lang, {}).get(key) or STRINGS[DEFAULT_LANG].get(key) or key
     return texto.format(**kwargs) if kwargs else texto

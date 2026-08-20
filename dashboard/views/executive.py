@@ -5,7 +5,7 @@ from common import (sidebar_refresh_control, sidebar_period_selector, get_data, 
 from src import aggregate
 from src.glossary import help_text, label as gl
 from src.i18n import t
-from src.theme import category_label
+from src.theme import category_label, severity_label
 
 sidebar_refresh_control()
 st.title(t("exec.title"))
@@ -73,7 +73,7 @@ if not trend.empty:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=trend["week"], y=trend["total"], name="Total", mode="lines+markers",
                               line=dict(color=PALETTE["accent"])))
-    fig.add_trace(go.Scatter(x=trend["week"], y=trend["critical_high"], name="Critical/High",
+    fig.add_trace(go.Scatter(x=trend["week"], y=trend["critical_high"], name=f'{severity_label("Critical")}/{severity_label("High")}',
                               mode="lines+markers", line=dict(color=PALETTE["critical"])))
     fig.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10),
                        legend=dict(orientation="h", y=1.1))
@@ -103,7 +103,7 @@ mttr_sev = aggregate.mttr_by_severity(alerts_df)
 if not mttr_sev.empty:
     st.caption(f"**{gl('mttr_by_severity')}** — {help_text('mttr_by_severity')}")
     fig = go.Figure(go.Bar(
-        x=mttr_sev["severity"], y=mttr_sev["mttr_days"],
+        x=[severity_label(s) for s in mttr_sev["severity"]], y=mttr_sev["mttr_days"],
         marker_color=[SEVERITY_COLOR_MAP.get(s, "#888") for s in mttr_sev["severity"]],
     ))
     fig.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10),
@@ -133,7 +133,7 @@ with col_b:
     if counts:
         order = [s for s in aggregate.SEVERITY_ORDER if s in counts]
         fig = go.Figure(go.Bar(
-            x=order, y=[counts[s] for s in order],
+            x=[severity_label(s) for s in order], y=[counts[s] for s in order],
             marker_color=[SEVERITY_COLOR_MAP.get(s, "#888") for s in order],
         ))
         fig.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10))

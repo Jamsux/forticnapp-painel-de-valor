@@ -5,6 +5,7 @@ from common import (sidebar_refresh_control, sidebar_period_selector, get_data, 
 from src import aggregate
 from src.glossary import alert_type_label, help_text, label as gl
 from src.i18n import t
+from src.theme import severity_label
 
 sidebar_refresh_control()
 st.title(t("ops.title"))
@@ -69,19 +70,25 @@ st.divider()
 st.subheader(t("ops.known_exploited_title"), help=help_text("vulns_known_exploited"))
 known = aggregate.known_exploited_table(vuln_df, n=30)
 if not known.empty:
-    st.dataframe(known, use_container_width=True, hide_index=True)
+    exibir_cve = known.copy()
+    exibir_cve["severity"] = exibir_cve["severity"].map(severity_label)
+    st.dataframe(exibir_cve, use_container_width=True, hide_index=True)
 else:
     st.info(t("ops.known_exploited_empty"))
 
 st.divider()
 
 st.subheader(gl("open_alerts_table"), help=help_text("open_alerts_table"))
+# os valores continuam em inglês (é o que filtra o dado); só a exibição traduz
 severities = ["Critical", "High", "Medium", "Low", "Info"]
-selected = st.multiselect(t("ops.filter_severity"), severities, default=["Critical", "High"])
+selected = st.multiselect(t("ops.filter_severity"), severities, default=["Critical", "High"],
+                           format_func=severity_label)
 open_df = aggregate.open_alerts_table(alerts_df)
 if not open_df.empty:
     filtered = open_df[open_df["severity"].isin(selected)] if selected else open_df
     st.caption(t("ops.open_alerts_count", shown=num(len(filtered)), total=num(len(open_df))))
-    st.dataframe(filtered, use_container_width=True, hide_index=True)
+    exibir = filtered.copy()
+    exibir["severity"] = exibir["severity"].map(severity_label)
+    st.dataframe(exibir, use_container_width=True, hide_index=True)
 else:
     st.info(t("ops.open_alerts_empty"))

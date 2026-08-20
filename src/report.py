@@ -7,7 +7,7 @@ from .aggregate import RETENTION_DAYS
 from .glossary import (alert_type_label, entries as glossary_entries, help_text,
                        label as glossary_label)
 from .i18n import get_language, t
-from .theme import PALETTE, SEVERITY_COLOR_MAP, category_label
+from .theme import PALETTE, SEVERITY_COLOR_MAP, category_label, severity_label
 
 REPORT_CSS = f"""
 <style>
@@ -232,7 +232,7 @@ def bar_list(rows, max_value=None, colors=None):
         color = (colors or {}).get(label)
         bar_color = color or PALETTE["accent"]
         label_style = f' style="color:{color};font-weight:700;"' if color else ""
-        value_str = esc(f"{value:,}".replace(",", "."))
+        value_str = esc(num(value))
         out.append(
             '<div class="rp-bar-row">'
             f'<div class="rp-bar-label"{label_style}>{esc(label)}</div>'
@@ -267,11 +267,13 @@ def table(headers, rows, html_cols=(), align_right=()):
 
 def severity_text(severity):
     """Severidade escrita na cor da própria gravidade (com marcador), para que
-    Critical/High saltem aos olhos também no papel."""
+    Critical/High saltem aos olhos também no papel. A cor vem do valor original
+    da API; o texto exibido é o rótulo no idioma corrente."""
     color = SEVERITY_COLOR_MAP.get(severity, PALETTE["muted"])
     return (
         f'<span class="rp-sev" style="color:{color};">'
-        f'<span class="rp-sev-dot" style="background:{color};"></span>{esc(severity)}</span>'
+        f'<span class="rp-sev-dot" style="background:{color};"></span>'
+        f"{esc(severity_label(severity))}</span>"
     )
 
 
@@ -410,7 +412,9 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
     ))
 
     # --- Vulnerabilidades
-    sev_rows = [(s, vkpi["counts"].get(s, 0)) for s in aggregate.SEVERITY_ORDER if vkpi["counts"].get(s, 0)]
+    sev_rows = [(severity_label(s), vkpi["counts"].get(s, 0))
+                for s in aggregate.SEVERITY_ORDER if vkpi["counts"].get(s, 0)]
+    sev_colors = {severity_label(s): c for s, c in SEVERITY_COLOR_MAP.items()}
     v_cards = [
         kpi_card(glossary_label("vulns_known_exploited"), num(vkpi["known_exploited"]),
                  t("doc.kpi.attack_tool"), tooltip=help_text("vulns_known_exploited")),
@@ -441,7 +445,7 @@ def build_report_html(data, client_name="", include_ops=True, include_glossary=T
     parts.append(section(
         t("doc.section.vulns"),
         block(t("doc.block.severity_dist"),
-              bar_list(sev_rows, colors=SEVERITY_COLOR_MAP) + snapshot_note)
+              bar_list(sev_rows, colors=sev_colors) + snapshot_note)
         + block("", kpi_grid(v_cards))
         + known_block,
     ))
